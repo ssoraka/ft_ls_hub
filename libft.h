@@ -113,5 +113,7 @@ char				*ft_ltoa(long n);
 char				*ft_ultoa(unsigned long un);
 char				*ft_strupcase(char *str);
 char				*ft_strlowcase(char *str);
+int					ft_max(int first, int second);
+int					ft_min(int first, int second);
 
 #endif

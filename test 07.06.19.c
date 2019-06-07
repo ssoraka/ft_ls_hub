@@ -30,8 +30,7 @@
 #define NOTHING 0
 #define DEL_LIST -1
 #define BUF_LINK_SIZE 1000
-#define NOT_DIRECTORY NULL
-#define FILE 1
+
 
 #define TEST1
 
@@ -87,8 +86,6 @@ int		ft_gflags(char flag, int write)
 	return (flags[flag]);
 }
 
-
-
 t_plist		*ft_return_width(t_dlist *list)
 {
 	t_plist *tmp;
@@ -103,7 +100,7 @@ t_plist		*ft_return_width(t_dlist *list)
 		{
 			tmp->maxnlink = ft_max(tmp->maxnlink, ft_strlen(list->n_link));
 			tmp->maxuser = ft_max(tmp->maxuser, ft_strlen(list->user1->pw_name));
-			tmp->maxgroup = ft_max(tmp->maxgroup, ft_strlen(list->group1->gr_name));
+			tmp->maxsize = ft_max(tmp->maxsize, ft_strlen(list->group1->gr_name));
 			tmp->maxsize = ft_max(tmp->maxsize, ft_strlen(list->size));
 		}
 		if (ft_gflags('s', 0))
@@ -182,11 +179,11 @@ void    print_list_name(t_dlist *list, int col, int row, int flag_s)
 	//printf("%d_%d_", list->number + list->global->last_row, list->global->countlist);
 	if (col + 1 == list->global->column)
 		//printf("%s", list->name);
-		ft_putendl(list->name);
+		ft_putstr(list->name);
 	else if (col + 2 == list->global->column &&
 		list->number + list->global->last_row >= list->global->countlist)
 		//printf("%s", list->name);
-		ft_putendl(list->name);
+		ft_putstr(list->name);
 	else
 		//printf("%-*s", list->global->maxnam + 2, list->name);
 		//ft_pseudoprintf(0, list->name, list->namlen - (list->global->maxnam + 2) , 0);
@@ -213,7 +210,7 @@ void	ft_print_list_names_by_column(t_plist *global)
 			(global->printl)[col] = ((global->printl)[col])->next;
 			col++;
 		}
-		//ft_putstr("\n");
+		ft_putstr("\n");
 		//printf("\n");
 		if (col + 1 < global->column)
 			break ;
@@ -316,7 +313,6 @@ int		ft_get_count_of_column(t_plist *width)
 			break ;
 		colcount--;
 	}
-	//free((void *)(&w));
 	//width->maxnam = width->maxnam + 4;//w.ws_col / (colcount + 1);
 	//printf ("lines %d\n", w.ws_row);
 	//printf ("columns %d\n", w.ws_col);
@@ -379,16 +375,12 @@ char	*ft_readlink(char *path)
 	size_t	read;
 	char	*answer;
 
-	answer = NULL;
 	buff[0] = '\0';
 	if (readlink(path, NULL, 0) == -1)
 		return (NULL);
 	if ((read = readlink(path, buff, BUF_LINK_SIZE)) > 0)
-	{
-		buff[read] = '\0';
 		answer = ft_strdup(buff);
-		answer = ft_strjoin_free(" -> ", answer, 0, 1);
-	}
+	answer = ft_strjoin_free(" -> ", answer, 0, 1);
 	return (answer);
 }
 
@@ -496,12 +488,13 @@ void		ft_dlistdel(t_dlist **begin_list)
 {
 	t_dlist		*prev_list;
 
-	if (begin_list == NULL || *begin_list == NULL)
+	if (begin_list == 0)
 		return ;
 	while (*begin_list != NULL)
 	{
 		prev_list = *begin_list;
 		*begin_list = (*begin_list)->next;
+		//prev_list->next = 0;
 		free(prev_list->stats);
 		free(prev_list->path);
 		//free(prev_list->user1);
@@ -512,6 +505,7 @@ void		ft_dlistdel(t_dlist **begin_list)
 		free(prev_list->n_link);
 		free(prev_list->blocks);
 		free(prev_list->size);
+		//ft_putendl(prev_list->name);
 		free(prev_list->name);
 		free(prev_list);
 	}
@@ -542,7 +536,7 @@ int		ft_find_suitable_place(t_dlist *list, t_dlist *new)
 		return (INSERT_LISTS);
 	return (ADD_LIST);
 }
-/*
+
 int		ft_check_and_del_notvalid_list(t_dlist **check_list)
 {
 	if (ft_gflags('a', 0) == 0)
@@ -553,7 +547,7 @@ int		ft_check_and_del_notvalid_list(t_dlist **check_list)
 		}
 	return (ADD_LIST);
 }
-*/
+
 
 void	ft_list_swap(t_dlist *list, t_dlist *new, int action, t_dlist **begin_list)
 {
@@ -588,8 +582,8 @@ void	ft_place_dlist(t_dlist **begin_list, t_dlist *new)
 	int		action;
 
 	action = NOTHING;
-	//if (ft_check_and_del_notvalid_list(&new) == DEL_LIST)
-	//	return ;
+	if (ft_check_and_del_notvalid_list(&new) == DEL_LIST)
+		return ;
 	if (*begin_list == 0)
 	{
 		*begin_list = new;
@@ -607,61 +601,50 @@ void	ft_place_dlist(t_dlist **begin_list, t_dlist *new)
 	ft_list_swap(check, new, action, begin_list);
 }
 
-int		ft_return_stat(struct stat **stats, char *path, struct dirent *dp)
+int		ft_return_stat(struct stat **stats, char *path, int flags)
 {
 	int file;
-	int flags;
 
-	flags = 0;
-	if (dp == NOT_DIRECTORY)
-		flags = FILE;
-	else if (dp && ft_gflags('a', 0) == 0 && (dp->d_name)[0] == '.')
-		return (FAIL);
 	*stats = NULL;
-	if (flags != FILE)
+	if (flags == 0)
 		flags = ft_gflags('l', 0) + ft_gflags('s', 0) + ft_gflags('S', 0) +
 		ft_gflags('t', 0);
-	if (dp && flags == 0)
+	if (flags == 0)
 		return (SUCCESS);
 	if ((*stats = (struct stat *)malloc(sizeof(struct stat))) == 0)
 		return (FAIL);
 	file = lstat(path, *stats);
-	if (file == ERROR)
+	if (file == FAIL)
 		free(*stats);
 	return (file);
 }
 
 
 
-int 	ft_reading_from_path(t_dlist **begin_list, struct dirent *dp, char *name, char *path)
+t_dlist 	*ft_read_dir(DIR *dirp, char *path)
 {
+	struct dirent *dp;
+	t_dlist *begin_list;
 	t_dlist *new_list;
 	struct stat *stats;
-	int namlen;
+	char *str;
 
-	if (dp != NOT_DIRECTORY)
+	begin_list = NULL;
+
+	while ((dp = readdir(dirp)) != NULL)
 	{
-		path = ft_strjoin(path, name);
-		namlen = dp->d_namlen;
+		str = ft_strjoin(path, dp->d_name);
+		if (ft_return_stat(&stats, str, 0) == SUCCESS)
+		{
+			new_list = ft_dlistnew(dp->d_name, dp->d_namlen, str);
+			ft_stats_to_list(new_list, stats);
+			ft_place_dlist(&begin_list, new_list);
+		}
 	}
-	else
-	{
-		path = ft_strdup(path);
-		namlen = ft_strlen(name);
-	}
-	if (ft_return_stat(&stats, path, dp) == SUCCESS)
-	{
-		new_list = ft_dlistnew(name, namlen, path);
-		ft_stats_to_list(new_list, stats);
-		ft_place_dlist(begin_list, new_list);
-		return (SUCCESS);
-	}
-	free(path);
-	return (FAIL);
+	return (begin_list);
 }
 
-
-int 	ft_read_and_print_dir(char *path, DIR *dirp);
+int 	ft_open_and_print_dir(char *path, DIR *dirp);
 
 void ft_recursive_call(t_dlist *list)
 {
@@ -669,12 +652,15 @@ void ft_recursive_call(t_dlist *list)
 
 	while (list)
 	{
-		if (ft_strcmp(".", list->name) != 0 &&
-			ft_strcmp("..", list->name) != 0 && list->link == NULL)
+		if (ft_strcmp(".", list->name) != 0 && ft_strcmp("..", list->name) != 0 && list->link == NULL)
+	//	if ((list->name)[0] != '.' && list->link == NULL)
 			if ((dirp = opendir(list->path)))
 			{
+				//ft_putstr("\n");
+				//ft_putstr(list->path);
+				//ft_putstr(":\n");
 				ft_pseudoprintf("\n*:\n", list->path, 0, 0);
-				ft_read_and_print_dir(list->path, dirp);
+				ft_open_and_print_dir(list->path, dirp);
 				(void)closedir(dirp);
 			}
 		list = list->next;
@@ -683,17 +669,16 @@ void ft_recursive_call(t_dlist *list)
 
 
 
-int 	ft_read_and_print_dir(char *path_of_dir, DIR *dirp)
+int 	ft_open_and_print_dir(char *path, DIR *dirp)
 {
-	struct dirent *dp;
 	t_dlist *begin_list;
 	char *str;
 
-	begin_list = NULL;
-	path_of_dir = ft_strjoin(path_of_dir, "/");
-	while ((dp = readdir(dirp)) != NULL)
-		ft_reading_from_path(&begin_list, dp, dp->d_name, path_of_dir);
-	ft_memdel((void **)(&path_of_dir));
+	path = ft_strjoin(path, "/");
+	begin_list = ft_read_dir(dirp, path);
+
+	ft_memdel((void **)(&path));
+
 	if (ft_gflags('r', 0))
 		ft_listrevers(&begin_list);
 	print_list(begin_list);
@@ -730,27 +715,31 @@ void ft_find_flags(int *argc, char ***argv)
 	}
 }
 
-
-
-DIR **ft_return_dirp_and_print_files(int argc, char **argv)
+DIR **ft_return_dirp(int argc, char **argv)
 {
 	DIR **dirp;
 	struct stat *stats;
 	int i;
-	t_dlist *begin_list;
+	t_dlist *begin_list = NULL;
 	t_dlist *new_list;
 
 	i = 0;
-	begin_list = NULL;
-	dirp = (DIR **)ft_memalloc(sizeof(*dirp) * (argc + 10));
+	dirp = (DIR **)ft_memalloc(sizeof(*dirp) * (argc + 1));
 	while (argc > 0)
 	{
 		dirp[i] = opendir(*argv);
 		if (!dirp[i] || ft_gflags('d', 0) == 1)
-			if (ft_reading_from_path(&begin_list, NOT_DIRECTORY, *argv, *argv) == FAIL)
+		{
+			if (ft_return_stat(&stats, *argv, 1) == SUCCESS)
+			{
+				new_list = ft_dlistnew(ft_strdup(*argv), ft_strlen(*argv), ft_strdup(*argv));
+				ft_stats_to_list(new_list, stats);
+				ft_place_dlist(&begin_list, new_list);
+			}
+			else
 				ft_pseudoprintf("ls: *: No such file or directory\n", *argv, 0, 0);
-		if (dirp[i])
-			i++;
+		}
+		i++;
 		argv++;
 		argc--;
 	}
@@ -785,31 +774,32 @@ int		main(int argc, char **argv)
 	{
 		argc++;
 		argv--;
-		ft_strcpy(*argv, ".");
-		//(*argv)[0] = '.';
-		//(*argv)[1] = '\0';
+		(*argv)[0] = '.';
+		(*argv)[1] = '\0';
 	}
 
-	DIR **dirp;
+	DIR **dirp1;
 	int i;
-	dirp = ft_return_dirp_and_print_files(argc, argv);
+	dirp1 = ft_return_dirp(argc, argv);
 
+	//int n = argc;
 	i = 0;
-	while (dirp[i])
+	while (i < argc)
 	{
-		if (ft_gflags('d', 0) == 0)
+		if (dirp1[i])
 		{
-			if (argc > 1 && i > 0)
-				printf("\n");
-			if (argc > 1)
-				printf("%s:\n", argv[i]);
-			ft_read_and_print_dir(argv[i], dirp[i]);
+			if (ft_gflags('d', 0) == 0)
+			{
+				if (argc > 1)
+					printf("\n%s:\n", argv[i]);
+				ft_open_and_print_dir(argv[i], dirp1[i]);
+			}
+			(void)closedir(dirp1[i]);
 		}
-		(void)closedir(dirp[i]);
 		i++;
 	}
-	free(dirp);
-	//exit (0);
+	free(dirp1);
+
 
 /*
 **	|drwxr-xr-x	|@+			| 53 		|ssoraka	|  2019 	|1802	| May 28 15:50 	|Library	|-> /Volumes/Storage/goinfre/ssoraka/
