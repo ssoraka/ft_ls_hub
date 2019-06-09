@@ -10,27 +10,37 @@
 #                                                                              #
 #******************************************************************************#
 
-NAME1 = main
-NAME2 = libftprintf.a
-SRC1 = /Users/ssoraka/Desktop/days/Libft/libft/libft.a
-SRC2 = /Users/ssoraka/Desktop/days/Libft/libft/*.o
+CC = gcc
+CFLAGS = -c
+NAME = ft_ls
+HEADER = ./includes/
+LIB = ./libft/
+SRC1 = ./sources/
+SRC = ft_ls.c
 
-all:
-	gcc -o $(NAME1) test.c libft.a
-	@/Users/ssoraka/Desktop/days/Libft/help_mat/clean
-	./$(NAME1)
+OBJS = $(SRC:.c=.o)
 
-go:
-	@gcc -c upravlenie.c ldtoa3.c
-	@ar rc  $(NAME2) $(SRC2) upravlenie.o ldtoa3.o
+all: $(NAME)
+
+$(NAME): $(OBJS)
+	make lib_refresh
+	$(CC) -o $(NAME) -I $(HEADER) -I $(LIB) $(OBJS) $(LIB)libft.a
+
+
+%.o: $(SRC1)%.c
+	$(CC) $(CFLAGS) $< -I $(HEADER) -I $(LIB)
+
+lib_refresh:
+	make -C $(LIB)
 
 norm:
 	norminette -R CheckForbiddenSourceHeader
 
 clean:
 	rm -rf *.o
+	make -C $(LIB) fclean
 
 fclean: clean
-	rm -rf *.o
+	@rm -rf $(NAME)
 
 re: fclean all
