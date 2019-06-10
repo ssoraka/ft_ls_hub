@@ -11,12 +11,19 @@
 #******************************************************************************#
 
 CC = gcc
-CFLAGS = -c
+CFLAGS = -c -Wall -Wextra -Werror
 NAME = ft_ls
 HEADER = ./includes/
 LIB = ./libft/
 SRC1 = ./sources/
-SRC = ft_ls.c
+SRC = ft_ls.c \
+flags_and_errors.c \
+parametrs_for_printing.c \
+printing.c \
+lists.c \
+lists2.c \
+return_stats.c \
+parametrs_of_stats.c
 
 OBJS = $(SRC:.c=.o)
 
